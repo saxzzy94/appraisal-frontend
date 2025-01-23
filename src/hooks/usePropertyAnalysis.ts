@@ -1,25 +1,29 @@
-'use client';
-
-import { useMutation } from '@tanstack/react-query';
-import { analyzeProperty } from '@/lib/api';
 import { useState } from 'react';
-import { PropertyAnalysis } from '@/types/api';
+import { propertyApi } from '@/lib/api';
+import type { ApiResponse } from '@/types/api';
 
 export function usePropertyAnalysis() {
-  const [analysisResult, setAnalysisResult] = useState<PropertyAnalysis | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState<ApiResponse | null>(null);
 
-  const mutation = useMutation({
-    mutationFn: analyzeProperty,
-    onSuccess: (data) => {
-      setAnalysisResult(data);
-    },
-  });
+  const analyzeProperty = async (url: string): Promise<void> => {
+    setIsAnalyzing(true);
+    try {
+      const result = await propertyApi.analyzeProperty(url);
+      setAnalysisResult(result);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const clearAnalysis = () => {
+    setAnalysisResult(null);
+  };
 
   return {
-    analyzeProperty: mutation.mutate,
-    isAnalyzing: mutation.isPending,
-    error: mutation.error,
+    analyzeProperty,
+    clearAnalysis,
+    isAnalyzing,
     analysisResult,
-    clearAnalysis: () => setAnalysisResult(null),
-  };
+  } as const;
 }

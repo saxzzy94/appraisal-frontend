@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { downloadReport } from '@/lib/api';
+import { propertyApi } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { Download, Share2, Loader2 } from 'lucide-react';
 
@@ -11,17 +11,15 @@ interface AnalysisActionsProps {
   propertyAddress: string;
 }
 
-export function AnalysisActions({
-  requestId,
-  propertyAddress,
-}: AnalysisActionsProps) {
+export function AnalysisActions({ requestId, propertyAddress }: AnalysisActionsProps) {
   const [isDownloading, setIsDownloading] = useState(false);
   const { toast } = useToast();
 
   const handleDownload = async () => {
+    setIsDownloading(true);
     try {
-      setIsDownloading(true);
-      const blob = await downloadReport(`${requestId}.pdf`);
+      const reportUrl = `/api/reports/executive_summary_${requestId}.pdf`;
+      const blob = await propertyApi.getReport(reportUrl);
       
       // Create a download link
       const url = window.URL.createObjectURL(blob);
@@ -34,15 +32,14 @@ export function AnalysisActions({
       document.body.removeChild(a);
 
       toast({
-        title: 'Success',
-        description: 'Report downloaded successfully',
-        variant: 'success',
+        title: "Success",
+        description: "Report downloaded successfully",
       });
-    } catch (error) {
+    } catch (err) {
       toast({
-        title: 'Error',
-        description: 'Failed to download report',
-        variant: 'destructive',
+        title: "Error",
+        description: err instanceof Error ? err.message : "Failed to download report",
+        variant: "destructive",
       });
     } finally {
       setIsDownloading(false);
@@ -50,29 +47,30 @@ export function AnalysisActions({
   };
 
   const handleShare = async () => {
-    const shareData = {
-      title: 'Property Analysis',
-      text: `Check out this property analysis for ${propertyAddress}`,
-      url: window.location.href,
-    };
+    if (!navigator.share) {
+      toast({
+        title: "Error",
+        description: "Sharing is not supported on this device",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
-      if (navigator.share) {
-        await navigator.share(shareData);
-      } else {
-        await navigator.clipboard.writeText(window.location.href);
+      await navigator.share({
+        title: `Property Analysis - ${propertyAddress}`,
+        text: `Check out this property analysis for ${propertyAddress}`,
+        url: window.location.href,
+      });
+    } catch (err) {
+      // Ignore AbortError as it's triggered when user cancels share dialog
+      if ((err as Error).name !== 'AbortError') {
         toast({
-          title: 'Link Copied',
-          description: 'Analysis link copied to clipboard',
-          variant: 'success',
+          title: "Error",
+          description: err instanceof Error ? err.message : "Failed to share analysis",
+          variant: "destructive",
         });
       }
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to share analysis',
-        variant: 'destructive',
-      });
     }
   };
 
@@ -84,13 +82,17 @@ export function AnalysisActions({
         disabled={isDownloading}
       >
         {isDownloading ? (
-          <Loader2 className="animate-spin" />
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
         ) : (
           <Download className="mr-2 h-4 w-4" />
         )}
         Download Report
       </Button>
-      <Button variant="outline" onClick={handleShare}>
+      
+      <Button
+        variant="outline"
+        onClick={handleShare}
+      >
         <Share2 className="mr-2 h-4 w-4" />
         Share
       </Button>

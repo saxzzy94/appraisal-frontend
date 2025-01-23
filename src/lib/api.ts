@@ -1,51 +1,81 @@
-import { PropertyAnalysis } from "@/types/api";
+import type { ApiResponse } from "@/types/api";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
-
-class APIError extends Error {
-  constructor(public status: number, message: string) {
-    super(message);
-    this.name = 'APIError';
-  }
+interface PropertyApiOptions {
+	baseUrl?: string;
+	headers?: HeadersInit;
 }
 
-export async function analyzeProperty(url: string): Promise<PropertyAnalysis> {
-  try {
-    const response = await fetch(`${API_BASE_URL}/v1/analyze`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ url }),
-    });
+const defaultOptions: PropertyApiOptions = {
+	baseUrl: "http://localhost:4000/api/v1",
+	headers: {
+		"Content-Type": "application/json",
+	},
+};
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new APIError(
-        response.status,
-        errorData.message || 'Failed to analyze property'
-      );
-    }
+class PropertyApi {
+	private baseUrl: string;
+	private headers: HeadersInit;
 
-    const data = await response.json() as PropertyAnalysis;
-    return data;
-  } catch (error) {
-    if (error instanceof APIError) {
-      throw error;
-    }
-    throw new APIError(500, 'Failed to connect to the analysis service');
-  }
+	constructor(options: PropertyApiOptions = {}) {
+		this.baseUrl = options.baseUrl || defaultOptions.baseUrl!;
+		this.headers = {
+			...defaultOptions.headers,
+			...options.headers,
+		};
+	}
+
+	private async fetchWithError(
+		url: string,
+		init?: RequestInit
+	): Promise<Response> {
+		const response = await fetch(url, {
+			...init,
+			headers: {
+				...this.headers,
+				...(init?.headers || {}),
+			},
+		});
+
+		if (!response.ok) {
+			const error = await response
+				.json()
+				.catch(() => ({ message: "An error occurred" }));
+			throw new Error(
+				error.message || `HTTP error! status: ${response.status}`
+			);
+		}
+
+		return response;
+	}
+
+	async analyzeProperty(url: string): Promise<ApiResponse> {
+		const response = await this.fetchWithError(`${this.baseUrl}/analyze`, {
+			method: "POST",
+			body: JSON.stringify({ url }),
+		});
+
+		return response.json();
+	}
+
+	async getAnalysis(requestId: string): Promise<ApiResponse> {
+		const response = await this.fetchWithError(
+			`${this.baseUrl}/analysis/${requestId}`
+		);
+		return response.json();
+	}
+
+	async getReport(reportUrl: string): Promise<Blob> {
+		const response = await this.fetchWithError(`${this.baseUrl}${reportUrl}`, {
+			headers: {
+				Accept: "application/pdf",
+			},
+		});
+		return response.blob();
+	}
 }
 
-export async function downloadReport(filename: string): Promise<Blob> {
-  const response = await fetch(`${API_BASE_URL}/v1/reports/${filename}`);
-  
-  if (!response.ok) {
-    throw new APIError(
-      response.status,
-      'Failed to download report'
-    );
-  }
-  
-  return response.blob();
-}
+// Export singleton instance
+export const propertyApi = new PropertyApi();
+
+// Export type for use in components
+export type { ApiResponse };

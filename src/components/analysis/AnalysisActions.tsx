@@ -1,10 +1,35 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { propertyApi } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { Download, Share2, Loader2 } from 'lucide-react';
+
+const isBrowser = typeof window !== 'undefined';
+
+const downloadFile = (blob: Blob, filename: string) => {
+  if (!isBrowser) return;
+  
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  window.URL.revokeObjectURL(url);
+  document.body.removeChild(a);
+};
+
+const useShare = () => {
+  const [canShare, setCanShare] = useState(false);
+  
+  useEffect(() => {
+    setCanShare(isBrowser && !!navigator.share);
+  }, []);
+  
+  return { canShare };
+};
 
 interface AnalysisActionsProps {
   requestId: string;
@@ -14,22 +39,17 @@ interface AnalysisActionsProps {
 export function AnalysisActions({ requestId, propertyAddress }: AnalysisActionsProps) {
   const [isDownloading, setIsDownloading] = useState(false);
   const { toast } = useToast();
+  const { canShare } = useShare();
 
   const handleDownload = async () => {
+    if (!isBrowser) return;
+    
     setIsDownloading(true);
     try {
       const reportUrl = `/api/reports/executive_summary_${requestId}.pdf`;
       const blob = await propertyApi.getReport(reportUrl);
       
-      // Create a download link
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `Property Analysis - ${propertyAddress}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      downloadFile(blob, `Property Analysis - ${propertyAddress}.pdf`);
 
       toast({
         title: "Success",
@@ -47,7 +67,7 @@ export function AnalysisActions({ requestId, propertyAddress }: AnalysisActionsP
   };
 
   const handleShare = async () => {
-    if (!navigator.share) {
+    if (!canShare) {
       toast({
         title: "Error",
         description: "Sharing is not supported on this device",
@@ -56,12 +76,14 @@ export function AnalysisActions({ requestId, propertyAddress }: AnalysisActionsP
       return;
     }
 
+    const shareData = {
+      title: `Property Analysis - ${propertyAddress}`,
+      text: `Check out this property analysis for ${propertyAddress}`,
+      url: isBrowser ? window.location.href : '',
+    };
+
     try {
-      await navigator.share({
-        title: `Property Analysis - ${propertyAddress}`,
-        text: `Check out this property analysis for ${propertyAddress}`,
-        url: window.location.href,
-      });
+      await navigator.share(shareData);
     } catch (err) {
       // Ignore AbortError as it's triggered when user cancels share dialog
       if ((err as Error).name !== 'AbortError') {

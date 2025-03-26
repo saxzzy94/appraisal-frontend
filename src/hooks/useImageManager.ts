@@ -1,4 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+
+const isBrowser = typeof window !== 'undefined';
 
 interface ImageManagerState {
   currentIndex: number;
@@ -17,10 +19,19 @@ interface ImageManagerResult {
 }
 
 export function useImageManager(initialImages: string[]): ImageManagerResult {
-  // Deduplicate images and ensure valid URLs
-  const processedImages = useMemo(() => {
-    const uniqueImages = Array.from(new Set(initialImages));
-    return uniqueImages.filter(url => {
+  // Just deduplicate during SSR, validate URLs on client
+  const uniqueImages = useMemo(() =>
+    Array.from(new Set(initialImages)),
+    [initialImages]
+  );
+
+  const [processedImages, setProcessedImages] = useState(uniqueImages);
+
+  // Validate URLs on client side only
+  useEffect(() => {
+    if (!isBrowser) return;
+
+    const validUrls = uniqueImages.filter(url => {
       try {
         new URL(url);
         return true;
@@ -29,7 +40,8 @@ export function useImageManager(initialImages: string[]): ImageManagerResult {
         return false;
       }
     });
-  }, [initialImages]);
+    setProcessedImages(validUrls);
+  }, [uniqueImages]);
 
   const [state, setState] = useState<ImageManagerState>({
     currentIndex: 0,

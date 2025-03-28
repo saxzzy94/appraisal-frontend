@@ -1,8 +1,9 @@
 'use client';
 
-import { URLInputForm } from "@/components/forms/URLInputForm";
 import { usePropertyAnalysis } from "@/hooks/usePropertyAnalysis";
 import { useToast } from "@/hooks/use-toast";
+import { useSearchParams } from "next/navigation";
+import { useEffect } from "react";
 import { PropertyOverview } from "@/components/analysis/PropertyOverview";
 import { AnalysisMetrics } from "@/components/analysis/AnalysisMetrics";
 import { AnalysisActions } from "@/components/analysis/AnalysisActions";
@@ -23,20 +24,22 @@ interface PriceData {
 }
 
 export default function Home() {
-  const { analyzeProperty, isAnalyzing, analysisResult, clearAnalysis } = usePropertyAnalysis();
+  const { analyzeProperty, analysisResult, clearAnalysis } = usePropertyAnalysis();
   const { toast } = useToast();
-
-  const handleAnalysis = async (url: string) => {
-    try {
-      await analyzeProperty(url);
-    } catch (err) {
-      toast({
-        title: "Error",
-        description: err instanceof Error ? err.message : "Failed to analyze property",
-        variant: "destructive",
+  const searchParams = useSearchParams();
+  
+  useEffect(() => {
+    const propertyUrl = searchParams.get('url');
+    if (propertyUrl && !analysisResult) {
+      analyzeProperty(propertyUrl).catch((error) => {
+        toast({
+          title: "Analysis Error",
+          description: error.message || "Failed to analyze property",
+          variant: "destructive",
+        });
       });
     }
-  };
+  }, [searchParams, analysisResult, analyzeProperty, toast]);
 
   if (analysisResult) {
     // Prepare data for price trend chart with house type information
@@ -126,8 +129,13 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-     No alalysis
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="text-center">
+        <h1 className="text-2xl font-semibold mb-2">No Analysis Data</h1>
+        <p className="text-muted-foreground">
+          Please start an analysis by providing a property URL.
+        </p>
+      </div>
     </div>
   );
 }

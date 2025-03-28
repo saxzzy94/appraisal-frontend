@@ -42,7 +42,7 @@ class PropertyApi {
   }
 
   async analyzeProperty(url: string): Promise<ApiResponse> {
-    const response = await this.fetchWithError(`${this.baseUrl}/analyze`, {
+    const response = await this.fetchWithError(`${this.baseUrl}property/analyze`, {
       method: 'POST',
       body: JSON.stringify({ url }),
     });
@@ -50,10 +50,10 @@ class PropertyApi {
     return response.json();
   }
 
-  async getAnalysis(requestId: string): Promise<ApiResponse> {
-    const response = await this.fetchWithError(`${this.baseUrl}/analysis/${requestId}`);
-    return response.json();
-  }
+  // async getAnalysis(requestId: string): Promise<ApiResponse> {
+  //   const response = await this.fetchWithError(`${this.baseUrl}/analysis/${requestId}`);
+  //   return response.json();
+  // }
 
   async getReport(reportUrl: string): Promise<Blob> {
     const response = await this.fetchWithError(`${this.baseUrl}${reportUrl}`, {

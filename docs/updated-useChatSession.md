@@ -29,7 +29,7 @@ export function useChatSession({ propertyUrl, onError }: ChatSessionHookProps) {
     queryFn: async () => {
       if (!propertyUrl) throw new Error("No property URL provided");
       
-      const response = await fetch(`${API_BASE_URL}/analyze`, {
+      const response = await fetch(`${API_BASE_URL}property/analyze`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

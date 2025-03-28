@@ -127,23 +127,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="container mx-auto px-4 py-16">
-        <div className="max-w-2xl mx-auto space-y-8">
-          <div className="text-center space-y-4">
-            <h1 className="text-4xl font-bold tracking-tight">Property Appraisal</h1>
-            <p className="text-muted-foreground">
-              Enter a property listing URL to get an instant appraisal analysis
-            </p>
-          </div>
-          
-          <div className="p-6 border rounded-lg shadow-sm">
-            <URLInputForm 
-              onSubmit={handleAnalysis}
-              isLoading={isAnalyzing}
-            />
-          </div>
-        </div>
-      </main>
+     No alalysis
     </div>
   );
 }

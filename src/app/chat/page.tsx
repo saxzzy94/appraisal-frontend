@@ -59,20 +59,18 @@ export default function ChatPage() {
 
 	const handleSendMessage = async (message: string): Promise<boolean> => {
 		// If this is the first message, require and extract a valid URL
-		if (messages.length === 0) {
-			const urlMatch = message.match(/https?:\/\/[^\s]+/);
-			if (!urlMatch) {
-				toast({
-					title: "URL Required",
-					description:
-						"Please provide a valid property URL to start the chat session.",
-					variant: "destructive",
-				});
-				return false; // Keep the message in the input
-			}
-
-			setPropertyUrl(urlMatch[0]);
+		const urlMatch = message.match(/https?:\/\/[^\s]+/);
+		if (!urlMatch) {
+			toast({
+				title: "URL Required",
+				description:
+					"Please provide a valid property URL to start the chat session.",
+				variant: "destructive",
+			});
+			return false; // Keep the message in the input
 		}
+		console.log("urlMatch", urlMatch[0]);
+		setPropertyUrl(urlMatch[0]);
 
 		try {
 			// Attempt to send the message using the hook function

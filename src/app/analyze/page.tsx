@@ -1,14 +1,14 @@
 'use client';
 
+import { useState, useEffect } from "react";
 import { usePropertyAnalysis } from "@/hooks/usePropertyAnalysis";
 import { useToast } from "@/hooks/use-toast";
-import { useSearchParams } from "next/navigation";
-import { useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { PropertyOverview } from "@/components/analysis/PropertyOverview";
 import { AnalysisMetrics } from "@/components/analysis/AnalysisMetrics";
 import { AnalysisActions } from "@/components/analysis/AnalysisActions";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2, Search } from "lucide-react";
 import { CollapsibleSection } from "@/components/analysis/sections/CollapsibleSection";
 import { ImageGallery } from "@/components/analysis/ui/ImageGallery";
 import { ErrorBoundary, SectionError } from "@/components/providers/ErrorBoundary";
@@ -16,6 +16,7 @@ import { PriceTrendChart } from "@/components/analysis/charts/PriceTrendChart";
 import { MarketComparison } from "@/components/analysis/charts/MarketComparison";
 import { ValuationDashboard } from "@/components/analysis/dashboard/ValuationDashboard";
 import { ComparableProperty, parseTransactionPrice } from "@/types/api";
+import { Input } from "@/components/ui/input";
 
 interface PriceData {
   date: string;
@@ -24,9 +25,11 @@ interface PriceData {
 }
 
 export default function Home() {
-  const { analyzeProperty, analysisResult, clearAnalysis } = usePropertyAnalysis();
+  const router = useRouter();
+  const { analyzeProperty, analysisResult, clearAnalysis, isAnalyzing } = usePropertyAnalysis();
   const { toast } = useToast();
   const searchParams = useSearchParams();
+  const [inputUrl, setInputUrl] = useState("");
   
   useEffect(() => {
     const propertyUrl = searchParams.get('url');
@@ -40,6 +43,33 @@ export default function Home() {
       });
     }
   }, [searchParams, analysisResult, analyzeProperty, toast]);
+
+  const handleStartAnalysis = () => {
+    if (!inputUrl) {
+      toast({
+        title: "URL Required",
+        description: "Please provide a property URL to analyze.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    router.push(`/analyze?url=${encodeURIComponent(inputUrl)}`);
+  };
+
+  if (isAnalyzing) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="flex items-center justify-center mb-4">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+          <h2 className="text-xl font-semibold mb-2">Analyzing Property</h2>
+          <p className="text-muted-foreground">Please wait while we analyze the property data...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (analysisResult) {
     // Prepare data for price trend chart with house type information
@@ -130,11 +160,24 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
-      <div className="text-center">
-        <h1 className="text-2xl font-semibold mb-2">No Analysis Data</h1>
-        <p className="text-muted-foreground">
-          Please start an analysis by providing a property URL.
-        </p>
+      <div className="w-full max-w-md p-6">
+        <h1 className="text-2xl font-semibold mb-6 text-center">Property Analysis</h1>
+        <div className="space-y-4">
+          <Input
+            type="url"
+            placeholder="Enter property URL"
+            value={inputUrl}
+            onChange={(e) => setInputUrl(e.target.value)}
+            className="w-full"
+          />
+          <Button 
+            className="w-full" 
+            onClick={handleStartAnalysis}
+          >
+            <Search className="mr-2 h-4 w-4" />
+            Start Analysis
+          </Button>
+        </div>
       </div>
     </div>
   );

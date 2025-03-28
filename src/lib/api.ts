@@ -1,68 +1,98 @@
-import type { ApiResponse } from '@/types/api';
+import { ApiResponse } from "@/types/api";
 
-interface PropertyApiOptions {
-  baseUrl?: string;
-  headers?: HeadersInit;
-}
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
-const defaultOptions: PropertyApiOptions = {
-  baseUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-};
-
-class PropertyApi {
-  private baseUrl: string;
-  private headers: HeadersInit;
-
-  constructor(options: PropertyApiOptions = {}) {
-    this.baseUrl = options.baseUrl || defaultOptions.baseUrl!;
-    this.headers = {
-      ...defaultOptions.headers,
-      ...options.headers,
-    };
-  }
-
-  private async fetchWithError(url: string, init?: RequestInit): Promise<Response> {
-    const response = await fetch(url, {
-      ...init,
+// Property Analysis API
+export const propertyApi = {
+  analyzeProperty: async (url: string): Promise<ApiResponse> => {
+    const response = await fetch(`${API_BASE_URL}/property/analyze`, {
+      method: "POST",
       headers: {
-        ...this.headers,
-        ...(init?.headers || {}),
+        "Content-Type": "application/json",
       },
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'An error occurred' }));
-      throw new Error(error.message || `HTTP error! status: ${response.status}`);
-    }
-
-    return response;
-  }
-
-  async analyzeProperty(url: string): Promise<ApiResponse> {
-    const response = await this.fetchWithError(`${this.baseUrl}/property/analyze`, {
-      method: 'POST',
       body: JSON.stringify({ url }),
     });
 
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || "Failed to analyze property");
+    }
+
+    return response.json();
+  },
+
+  getReport: async (reportUrl: string) => {
+    const response = await fetch(reportUrl);
+    if (!response.ok) {
+      throw new Error("Failed to download report");
+    }
+    return response.blob();
+  },
+
+  downloadReport: async (requestId: string) => {
+    const response = await fetch(`${API_BASE_URL}/reports/${requestId}`);
+    if (!response.ok) {
+      throw new Error("Failed to download report");
+    }
+    return response.blob();
+  },
+};
+
+// Chat API
+export const chatApi = {
+  startChat: async (message: string, propertyUrl?: string, language: string = 'en', sessionId?: string) => {
+    const response = await fetch(`${API_BASE_URL}/chat/start`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        message,
+        propertyUrl,
+        language,
+        sessionId
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || "Failed to start chat");
+    }
+
+    return response.json();
+  },
+
+  sendMessage: async (message: string, sessionId: string, language: string = 'en') => {
+    const response = await fetch(`${API_BASE_URL}/chat/message`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        message,
+        sessionId,
+        language,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || "Failed to send message");
+    }
+
     return response.json();
   }
+};
 
-
-  async getReport(reportUrl: string): Promise<Blob> {
-    const response = await this.fetchWithError(`${this.baseUrl}${reportUrl}`, {
-      headers: {
-        Accept: 'application/pdf',
-      },
-    });
-    return response.blob();
-  }
+// Legacy API functions (for backward compatibility)
+export async function analyzeProperty(url: string): Promise<ApiResponse> {
+  return propertyApi.analyzeProperty(url);
 }
 
-// Export singleton instance
-export const propertyApi = new PropertyApi();
+export async function startChat(message: string, propertyUrl?: string, language: string = 'en', sessionId?: string) {
+  return chatApi.startChat(message, propertyUrl, language, sessionId);
+}
 
-// Export type for use in components
-export type { ApiResponse };
+export async function sendChatMessage(message: string, sessionId: string, language: string = 'en') {
+  return chatApi.sendMessage(message, sessionId, language);
+}

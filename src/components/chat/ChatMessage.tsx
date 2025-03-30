@@ -1,6 +1,8 @@
 import { cn } from "@/lib/utils";
 import { Avatar } from "../ui/avatar";
 import { Card } from "../ui/card";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface ChatMessageProps {
 	content: string;
@@ -41,7 +43,12 @@ export function ChatMessage({ content, role, timestamp }: ChatMessageProps) {
 								: "bg-secondary/10 text-foreground"
 						)}
 					>
-						<p className="text-sm whitespace-pre-wrap">{content}</p>
+						<div className="prose prose-sm dark:prose-invert max-w-none"
+>
+							<ReactMarkdown 
+								remarkPlugins={[remarkGfm]} 
+							>{content}</ReactMarkdown>
+						</div>
 					</Card>
 
 					{timestamp && (

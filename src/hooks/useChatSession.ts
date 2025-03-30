@@ -1,14 +1,8 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
-import { chatApi } from "@/lib/api";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { chatApi, type Message } from "@/lib/api";
 
 export type Language = "dutch" | "english";
-
-interface Message {
-  content: string;
-  role: "user" | "assistant";
-  timestamp: string;
-}
 
 interface ChatSessionHookProps {
   propertyUrl: string;
@@ -21,6 +15,11 @@ export function useChatSession({ propertyUrl, language, onError, onSessionStart 
   const [messages, setMessages] = useState<Message[]>([]);
   const [sessionId, setSessionId] = useState<string>("");
   
+  const { data: sessionsData } = useQuery({
+    queryKey: ["chatSessions"],
+    queryFn: chatApi.getSessions,
+  });
+
   // Start Chat mutation for initial messages or new property URLs
   const startChatMutation = useMutation({
     mutationFn: async (message: string) => {
@@ -82,6 +81,15 @@ export function useChatSession({ propertyUrl, language, onError, onSessionStart 
     onError,
   });
 
+  // Session loading mutation
+  const loadSessionMutation = useMutation({
+    mutationFn: chatApi.getSessionMessages,
+    onSuccess: (data) => {
+      setMessages(data.data.messages);
+    },
+    onError,
+  });
+
   const checkForUrl = (message: string): boolean => {
     return !!message.match(/https?:\/\/[^\s]+/);
   };
@@ -101,10 +109,17 @@ export function useChatSession({ propertyUrl, language, onError, onSessionStart 
     }
   };
 
+  const loadSession = async (newSessionId: string) => {
+    setSessionId(newSessionId);
+    await loadSessionMutation.mutateAsync(newSessionId);
+  };
+
   return {
     messages,
     sendMessage,
-    isLoading: startChatMutation.isPending || chatMessageMutation.isPending,
+    loadSession,
+    isLoading: startChatMutation.isPending || chatMessageMutation.isPending || loadSessionMutation.isPending,
     sessionId,
+    sessions: sessionsData?.data ?? [],
   };
 }

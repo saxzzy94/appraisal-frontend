@@ -38,9 +38,39 @@ export const propertyApi = {
   },
 };
 
+interface Message {
+  content: string;
+  role: "user" | "assistant";
+  timestamp: string;
+}
+
+interface ChatSession {
+  sessionId: string;
+  title: string;
+}
+
 // Chat API
 export const chatApi = {
-  startChat: async (message: string, propertyUrl?: string, language: string = 'en', sessionId?: string) => {
+  getSessions: async (): Promise<{ status: string; data: ChatSession[] }> => {
+    // The API now returns an array of objects with sessionId and title
+    const response = await fetch(`${API_BASE_URL}/chat/sessions`);
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || "Failed to fetch chat sessions");
+    }
+    return response.json();
+  },
+
+  getSessionMessages: async (sessionId: string): Promise<{ data: { messages: Message[] } }> => {
+    const response = await fetch(`${API_BASE_URL}/chat/session/${sessionId}`);
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || "Failed to fetch session messages");
+    }
+    return response.json();
+  },
+
+  startChat: async (message: string, propertyUrl?: string, language: string = 'english', sessionId?: string) => {
     const response = await fetch(`${API_BASE_URL}/chat/start`, {
       method: "POST",
       headers: {
@@ -62,7 +92,7 @@ export const chatApi = {
     return response.json();
   },
 
-  sendMessage: async (message: string, sessionId: string, language: string = 'en') => {
+  sendMessage: async (message: string, sessionId: string, language: string = 'english') => {
     const response = await fetch(`${API_BASE_URL}/chat/message`, {
       method: "POST",
       headers: {
@@ -89,10 +119,12 @@ export async function analyzeProperty(url: string): Promise<ApiResponse> {
   return propertyApi.analyzeProperty(url);
 }
 
-export async function startChat(message: string, propertyUrl?: string, language: string = 'en', sessionId?: string) {
+export async function startChat(message: string, propertyUrl?: string, language: string = 'english', sessionId?: string) {
   return chatApi.startChat(message, propertyUrl, language, sessionId);
 }
 
-export async function sendChatMessage(message: string, sessionId: string, language: string = 'en') {
+export async function sendChatMessage(message: string, sessionId: string, language: string = 'english') {
   return chatApi.sendMessage(message, sessionId, language);
 }
+
+export type { Message, ChatSession };

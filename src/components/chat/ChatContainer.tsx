@@ -69,7 +69,7 @@ export function ChatContainer({
 						<div className="flex justify-center items-center py-4">
 							<div className="flex items-center space-x-2 text-muted-foreground">
 								<Loader2 className="h-4 w-4 animate-spin" />
-								<span>Thinking...</span>
+								<span>Analyzing property...</span>
 							</div>
 						</div>
 					) : (

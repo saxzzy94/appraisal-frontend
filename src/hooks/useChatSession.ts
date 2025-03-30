@@ -9,9 +9,16 @@ interface ChatSessionHookProps {
   language: Language;
   onError?: (error: Error) => void;
   onSessionStart?: (sessionId: string) => void;
+  onPropertyDataLoaded?: (url: string) => void;
 }
 
-export function useChatSession({ propertyUrl, language, onError, onSessionStart }: ChatSessionHookProps) {
+export function useChatSession({ 
+  propertyUrl, 
+  language, 
+  onError, 
+  onSessionStart,
+  onPropertyDataLoaded
+}: ChatSessionHookProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [sessionId, setSessionId] = useState<string>("");
   
@@ -48,6 +55,11 @@ export function useChatSession({ propertyUrl, language, onError, onSessionStart 
       if (data.data?.sessionId && !sessionId) {
         setSessionId(data.data.sessionId);
         onSessionStart?.(data.data.sessionId);
+      }
+
+      // Handle property data from analysis
+      if (data.data?.propertyAnalysis?.propertyUrl) {
+        onPropertyDataLoaded?.(data.data.propertyAnalysis.propertyUrl);
       }
     },
     onError,
@@ -86,6 +98,17 @@ export function useChatSession({ propertyUrl, language, onError, onSessionStart 
     mutationFn: chatApi.getSessionMessages,
     onSuccess: (data) => {
       setMessages(data.data.messages);
+      
+      // Handle property data from existing session
+      if (data.data.propertyUrl) {
+        onPropertyDataLoaded?.(data.data.propertyUrl);
+      }
+      
+      // Handle session ID
+      if (data.data.sessionId) {
+        setSessionId(data.data.sessionId);
+        onSessionStart?.(data.data.sessionId);
+      }
     },
     onError,
   });
@@ -110,8 +133,12 @@ export function useChatSession({ propertyUrl, language, onError, onSessionStart 
   };
 
   const loadSession = async (newSessionId: string) => {
-    setSessionId(newSessionId);
     await loadSessionMutation.mutateAsync(newSessionId);
+  };
+
+  const resetSession = () => {
+    setMessages([]);
+    setSessionId("");
   };
 
   return {
@@ -120,6 +147,7 @@ export function useChatSession({ propertyUrl, language, onError, onSessionStart 
     loadSession,
     isLoading: startChatMutation.isPending || chatMessageMutation.isPending || loadSessionMutation.isPending,
     sessionId,
+    resetSession,
     sessions: sessionsData?.data ?? [],
   };
 }

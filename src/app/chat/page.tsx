@@ -16,30 +16,13 @@ export default function ChatPage() {
   const [propertyUrl, setPropertyUrl] = useState<string>("");
   const [sessionId, setSessionId] = useState<string>("");
   const [language, setLanguage] = useState<Language>("english");
-  
-  const {
-    analysisResult,
-    isAnalyzing: isAnalysisLoading,
-  } = usePropertyAnalysis();
-  
-  // Initialize from URL parameters when the page loads
-  useEffect(() => {
-    const sessionParam = searchParams.get('session');
-    const urlParam = searchParams.get('url');
-    
-    if (sessionParam && !sessionId) {
-      setSessionId(sessionParam);
-    }
-    
-    if (urlParam && !propertyUrl) {
-      setPropertyUrl(decodeURIComponent(urlParam));
-    }
-  }, [searchParams, sessionId, propertyUrl]);
-  
+  const [isInitialized, setIsInitialized] = useState(false);
+
   const {
     messages,
     sendMessage,
     loadSession,
+    resetSession,
     isLoading,
   } = useChatSession({
     propertyUrl,
@@ -53,20 +36,50 @@ export default function ChatPage() {
     },
     onSessionStart: (newSessionId) => {
       setSessionId(newSessionId);
-      updateUrlWithSession(newSessionId);
     },
+    onPropertyDataLoaded: (url) => {
+      setPropertyUrl(url);
+    }
   });
+
+  const {
+    analysisResult,
+    isAnalyzing: isAnalysisLoading,
+    clearAnalysis,
+  } = usePropertyAnalysis();
+
+  // Initialize from URL parameters once when the component mounts
+  useEffect(() => {
+    if (isInitialized) return;
+
+    const sessionParam = searchParams.get('session');
+    if (sessionParam) {
+      loadSession(sessionParam).catch((error) => {
+        if (error instanceof Error) {
+          toast({
+            title: "Error",
+            description: error.message || "Failed to load chat session",
+            variant: "destructive",
+          });
+        }
+      });
+    }
+
+    setIsInitialized(true);
+  }, [searchParams, loadSession, toast, isInitialized]);
+
+  // Update URL when session changes
+  useEffect(() => {
+    if (sessionId) {
+      const urlParam = propertyUrl ? `&url=${encodeURIComponent(propertyUrl)}` : '';
+      router.replace(`/chat?session=${sessionId}${urlParam}`, { scroll: false });
+    }
+  }, [sessionId, propertyUrl, router]);
 
   const handleNavigateToAnalytics = () => {
     if (propertyUrl) {
       router.push(`/analyze?url=${encodeURIComponent(propertyUrl)}`);
     }
-  };
-
-  const updateUrlWithSession = (sid: string) => {
-    // Preserve the URL parameter if it exists
-    const urlParam = propertyUrl ? `&url=${encodeURIComponent(propertyUrl)}` : '';
-    router.push(`/chat?session=${sid}${urlParam}`, { scroll: false });
   };
 
   const handleSendMessage = async (message: string): Promise<boolean> => {
@@ -94,27 +107,20 @@ export default function ChatPage() {
     }
   };
 
-  const handleSelectSession = async (newSessionId: string) => {
-    try {
-      await loadSession(newSessionId);
-      setSessionId(newSessionId);
-      updateUrlWithSession(newSessionId);
-    } catch (error) {
-      if (error instanceof Error) {
-        toast({
-          title: "Error",
-          description: error.message || "Failed to load chat session",
-          variant: "destructive",
-        });
-      }
-    }
+  const handleNewChat = () => {
+    setPropertyUrl("");
+    setSessionId("");
+    resetSession();
+    clearAnalysis();
+    router.replace("/chat", { scroll: false });
   };
 
   return (
     <div className="flex h-[calc(100vh-3.5rem)]">
       <ChatSidebar 
         currentSessionId={sessionId}
-        onSelectSession={handleSelectSession}
+        onSelectSession={loadSession}
+        onNewChat={handleNewChat}
       />
       <div className="flex-1 flex flex-col">
         <div className="flex justify-end px-4 py-2 border-b border-border">

@@ -30,9 +30,9 @@ export default function Home() {
   const { toast } = useToast();
   const searchParams = useSearchParams();
   const [inputUrl, setInputUrl] = useState("");
+  const propertyUrl = searchParams.get('url');
   
-  useEffect(() => {
-    const propertyUrl = searchParams.get('url');
+  useEffect(() => {    
     if (propertyUrl && !analysisResult) {
       analyzeProperty(propertyUrl).catch((error) => {
         toast({
@@ -42,7 +42,7 @@ export default function Home() {
         });
       });
     }
-  }, [searchParams, analysisResult, analyzeProperty, toast]);
+  }, [propertyUrl, analyzeProperty, toast]);
 
   const handleStartAnalysis = () => {
     if (!inputUrl) {
@@ -85,7 +85,15 @@ export default function Home() {
       <div className="min-h-screen bg-background">
         <main className="container mx-auto px-4 py-8">
           <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <Button variant="outline" className="w-fit" onClick={clearAnalysis}>
+            <Button 
+              variant="outline" 
+              className="w-fit" 
+              onClick={() => {
+                setInputUrl("");
+                clearAnalysis();
+                router.replace("/analyze", { scroll: false });                
+              }}
+            >
               <ArrowLeft className="mr-2 h-4 w-4" />
               New Analysis
             </Button>

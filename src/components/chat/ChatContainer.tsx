@@ -7,7 +7,7 @@ import { ChatReport } from "./ChatReport";
 import { ScrollArea } from "../analysis/ui/ScrollArea";
 import { Button } from "../ui/button";
 import { FileText, BarChart, Loader2, Maximize2, Link } from "lucide-react";
-import type { ApiResponse } from "@/types/api";
+import type { ApiResult } from "@/types/api";
 
 interface Message {
 	content: string;
@@ -22,7 +22,7 @@ interface ChatContainerProps {
 	onDownloadReport?: () => Promise<void>;
 	onViewAnalytics?: () => void;
 	showActions?: boolean;
-	analysisData?: ApiResponse;
+	analysisData?: ApiResult;
 }
 
 export function ChatContainer({
@@ -46,7 +46,9 @@ export function ChatContainer({
 	}, [messages]);
 
 	const handleShowReport = () => {
-		if (analysisData) {
+		// Only show report if analysis data exists and doesn't contain an error message
+    const isValidAnalysis = analysisData && !('message' in analysisData.data);
+    if (isValidAnalysis) {
 			setShowReport(true);
 		}
 	};
@@ -112,7 +114,8 @@ export function ChatContainer({
 
 						{showActions && (
 							<div className="flex justify-center gap-4 py-6 mb-4">
-								{onDownloadReport && analysisData && (
+								{onDownloadReport && analysisData && !('message' in analysisData.data) && (
+ 
 									<Button
 										onClick={handleShowReport}
 										variant="outline"
@@ -157,7 +160,7 @@ export function ChatContainer({
 				</>
 			)}
 
-			{analysisData && (
+			{analysisData && !('message' in analysisData.data) && (
 				<ChatReport
 					isOpen={showReport}
 					onClose={() => setShowReport(false)}

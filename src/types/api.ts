@@ -142,11 +142,20 @@ export interface Assessment {
   };
 }
 
+export interface ApiErrorResponse {
+  status: string;
+  data: {
+    message: string;
+  };
+  timestamp: string;
+}
+
+export type ApiResult = ApiResponse | ApiErrorResponse;
+
 export interface ApiResponse {
   requestId: string;
   status: string;
   data: {
-    propertyData: PropertyData;
     visionAnalysis: VisionAnalysis;
     marketAnalysis: MarketAnalysis;
     assessment: Assessment;
@@ -157,6 +166,7 @@ export interface ApiResponse {
       marketAnalysis: string;
       assessment: string;
     };
+    propertyData: PropertyData;
   };
   timestamp: string;
 }

@@ -22,8 +22,15 @@ import {
 	ComparableProperty,
 	parseTransactionPrice,
 	ApiResponse,
+	ApiErrorResponse,
 } from "@/types/api";
 import { Input } from "@/components/ui/input";
+
+function isErrorResponse(
+	result: ApiResponse | ApiErrorResponse | null
+): result is ApiErrorResponse {
+	return result !== null && "message" in result.data;
+}
 
 interface PriceData {
 	date: string;
@@ -81,6 +88,29 @@ function AnalyzePage() {
 				message="Analyzing Property"
 				description="Please wait while we analyze the property data..."
 			/>
+		);
+	}
+
+	if (analysisResult && isErrorResponse(analysisResult)) {
+		return (
+			<div className="min-h-screen bg-background flex items-center justify-center">
+				<div className="w-full max-w-md bg-destructive/10 text-destructive rounded-lg p-4">
+					<div className="flex flex-col items-center gap-4">
+						<p className="text-center">{analysisResult.data.message}</p>
+						<Button
+							variant="outline"
+							onClick={() => {
+								setInputUrl("");
+								clearAnalysis();
+								router.replace("/analyze", { scroll: false });
+							}}
+						>
+							<ArrowLeft className="mr-2 h-4 w-4" />
+							New Analysis
+						</Button>
+					</div>
+				</div>
+			</div>
 		);
 	}
 
@@ -159,9 +189,13 @@ function AnalysisView({
 	analysisResult,
 	onNewAnalysis,
 }: {
-	analysisResult: ApiResponse;
+	analysisResult: ApiResponse | ApiErrorResponse;
 	onNewAnalysis: () => void;
 }) {
+	if (isErrorResponse(analysisResult)) {
+		return null; // This case is already handled in the parent
+	}
+
 	const priceData: PriceData[] =
 		analysisResult.data.marketAnalysis.comparableProperties
 			.map(

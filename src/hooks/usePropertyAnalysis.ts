@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { propertyApi } from '@/lib/api';
-import type { ApiResponse } from '@/types/api';
+import type { ApiResponse, ApiErrorResponse } from '@/types/api';
 
 export function usePropertyAnalysis() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState<ApiResponse | null>(null);
+  const [analysisResult, setAnalysisResult] = useState<ApiResponse | ApiErrorResponse | null>(null);
 
   const analyzeProperty = async (url: string): Promise<void> => {
     setIsAnalyzing(true);

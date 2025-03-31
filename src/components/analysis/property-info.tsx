@@ -3,7 +3,6 @@
 import { PropertyData } from '@/types/api';
 import { Card, CardContent } from '@/components/ui/card';
 import { 
-  Home,
   MapPin,
   Euro,
   Maximize2,

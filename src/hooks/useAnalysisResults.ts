@@ -1,13 +1,13 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { getStoredAnalysis } from '@/lib/api';
+import { getAnalysis } from '@/lib/storage';
 
 export function useAnalysisResults(id: string) {
   return useQuery({
     queryKey: ['analysis', id],
     queryFn: () => {
-      const analysis = getStoredAnalysis(id);
+      const analysis = getAnalysis(id);
       if (!analysis) {
         throw new Error('Analysis not found');
       }

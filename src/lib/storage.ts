@@ -1,4 +1,10 @@
+import { ApiResponse } from '@/types/api';
+
 const STORAGE_KEY = 'property-analysis-results';
+
+interface StoredAnalysis extends ApiResponse {
+  savedAt: string;
+}
 
 export function saveToStorage<T>(key: string, data: T): void {
   try {
@@ -19,11 +25,11 @@ export function getFromStorage<T>(key: string): T | null {
 }
 
 export function getAllAnalyses() {
-  return getFromStorage<Record<string, any>>(STORAGE_KEY) || {};
+  return getFromStorage<Record<string, StoredAnalysis>>(STORAGE_KEY) || {};
 }
 
-export function saveAnalysis(id: string, data: any) {
-  const analyses = getAllAnalyses();
+export function saveAnalysis(id: string, data: ApiResponse) {
+  const analyses = getFromStorage<Record<string, StoredAnalysis>>(STORAGE_KEY) || {};
   analyses[id] = {
     ...data,
     savedAt: new Date().toISOString(),
@@ -32,7 +38,7 @@ export function saveAnalysis(id: string, data: any) {
 }
 
 export function getAnalysis(id: string) {
-  const analyses = getAllAnalyses();
+  const analyses = getFromStorage<Record<string, StoredAnalysis>>(STORAGE_KEY) || {};
   return analyses[id] || null;
 }
 

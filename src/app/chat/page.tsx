@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { ChatContainer } from "@/components/chat/ChatContainer";
 import { useChatSession, Language } from "@/hooks/useChatSession";
@@ -10,6 +10,20 @@ import { ChatSidebar } from "@/components/chat/ChatSidebar";
 import { usePropertyAnalysis } from "@/hooks/usePropertyAnalysis";
 
 export default function ChatPage() {
+  return (
+    <Suspense 
+      fallback={
+        <div className="flex h-[calc(100vh-3.5rem)] items-center justify-center">
+          <p className="text-muted-foreground">Loading chat...</p>
+        </div>
+      }
+    >
+      <ChatPageContent />
+    </Suspense>
+  );
+}
+
+function ChatPageContent() {
   const { toast } = useToast();
   const router = useRouter();
   const searchParams = useSearchParams();
